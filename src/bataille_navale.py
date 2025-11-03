@@ -4,12 +4,14 @@ Ce module implémente un jeu de bataille navale simple en Python.
 """
 
 import random
-from typing import List, Tuple
+from typing import Tuple
 
 # Constantes globales
 TAILLE_MIN = 3  # Taille minimale autorisée pour la grille
 TAILLE_MAX = 10  # Taille maximale autorisée pour la grille
 NB_BATEAUX = 3  # Nombre de bateaux à placer sur la grille
+NB_VIES = 5
+
 
 def creer_grille(taille):
     """
@@ -62,22 +64,41 @@ def demander_taille_grille():
         except ValueError:
             print("Erreur: Veuillez entrer un nombre entier valide.")
 
-def demander_coordonnees():
-    """
-    Demande à l'utilisateur de choisir une case.
-    :return: Coordonnées choisies (x, y).
+def demander_coordonnees(taille: int = TAILLE_MAX) -> Tuple[int, int]:
+    """Lit et retourne une saisie utilisateur au format "ligne,col".
+    
+    Valide que les coordonnées sont au bon format et dans les limites de la grille.
+    Redemande une saisie tant que l'entrée n'est pas valide.
+    
+    Args:
+        taille: taille de la grille pour valider les limites (par défaut: TAILLE)
+        
+    Returns:
+        Un tuple (x, y) contenant les coordonnées saisies par l'utilisateur.
     """
     while True:
         try:
-            val = input("Sélectionnez une case (ligne,col): ")
+            val = input("Selectionnez une case (ligne,col): ")
+            # Vérifier le format
+            if "," not in val:
+                print("Format invalide! Utilisez 'ligne,colonne'")
+                continue
+            # Extraire et convertir les valeurs
             x, y = map(int, val.split(","))
+            # Vérifier les limites
+            if x < 0 or x >= taille or y < 0 or y >= taille:
+                print(f"Coordonnées hors limites! Entrez des valeurs entre 0 et {taille-1}")
+                continue
             return x, y
         except ValueError:
-            print("Entrée invalide. Veuillez entrer deux nombres séparés par une virgule (ex: 1,2)")
+            print("Veuillez entrer uniquement des nombres entiers!")
 
-def jouer():
-    """
-    Fonction principale pour jouer à la bataille navale.
+
+def jouer() -> None:
+    """Boucle de jeu console minimaliste.
+
+    Place des bateaux puis demande des coordonnées tant que tous les
+    bateaux n'ont pas été touchés.
     """
     print("Bienvenue à la bataille navale!")
 
@@ -87,33 +108,32 @@ def jouer():
     # Créer la grille et placer les bateaux
     grille = creer_grille(taille)
     placer_bateaux(grille, NB_BATEAUX)
+    
+    global NB_VIES
 
     nb_succes = 0
     while nb_succes < NB_BATEAUX:
         print("Grille:")
         afficher_grille(grille)
 
-        try:
-            x, y = demander_coordonnees()
+        x, y = demander_coordonnees()
 
-            # Vérifier si les coordonnées sont valides
-            if not (0 <= x < taille and 0 <= y < taille):
-                print("Coordonnées hors limites. Réessayez.")
-                continue
+        if grille[x][y] == "B":
+            print(f"Touche! Il vous reste {NB_VIES} vies.")
+            grille[x][y] = "X"
+            nb_succes += 1
+        elif grille[x][y] == "~":
+            NB_VIES -= 1
+            grille[x][y] = "O"
 
-            if grille[x][y] == "B":
-                print("Touché!")
-                grille[x][y] = "X"
-                nb_succes += 1
-            elif grille[x][y] == "~":
-                print("Raté!")
-                grille[x][y] = "O"
+            if NB_VIES > 0:
+                print(f"Rate! Il vous reste {NB_VIES} vies.")
             else:
-                print("Vous avez déjà tiré ici. Réessayez.")
-        except IndexError:
-            print("Coordonnées invalides. Réessayez.")
-
-    print("\nBravo! Vous avez coulé tous les bateaux!")
+                print("Rate! Il ne vous reste plus aucune vie, vous avez perdu.")
+                afficher_grille(grille)
+                return
+                
+    print("Bravo ! Vous avez coulé tous les bateaux !")
     afficher_grille(grille)
 
 
